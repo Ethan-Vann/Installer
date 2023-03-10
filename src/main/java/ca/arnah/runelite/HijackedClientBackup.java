@@ -38,7 +38,7 @@ public class HijackedClientBackup
 	PluginManager pluginManager;
 	@Inject
 	EventBus eventBus;
-
+	Logger logger = LoggerFactory.getLogger(HijackedClientBackup.class);
 	public void start()
 	{
 		new Thread(() ->
@@ -65,15 +65,31 @@ public class HijackedClientBackup
 				{
 					classes.addAll(listFilesInJar(jarPath));
 				}
-				for (ClassByte aClass : classes)
+				for (Path jarPath : jarPaths)
 				{
-					Class<?> loaded = simpleLoader.loadClass(aClass.name, aClass.bytes);
-					if (loaded != null && loaded.getSuperclass() != null && loaded.getSuperclass().equals(Plugin.class))
-					{
-						toLoad.add(loaded);
-					}
+					classes.addAll(listFilesInJar(jarPath));
 				}
+				int numLoaded = 0;
+				do {
+					numLoaded = 0;
+					for (int i1 = classes.size() - 1; i1 >= 0; i1--)
+					{
+						Class<?> loaded = simpleLoader.loadClass(classes.get(i1).name, classes.get(i1).bytes);
+						if (loaded != null)
+						{
+							numLoaded++;
+							classes.remove(i1);
+						}
+						if (loaded != null &&loaded.getSuperclass() != null && loaded.getSuperclass().equals(Plugin.class))
+						{
+							logger.info("Loaded: " + loaded.getName());
+							toLoad.add(loaded);
+						}
+					}
+				}while(numLoaded != 0);
+				logger.info(String.valueOf(toLoad.size()));
 				List<Plugin> loaded = pluginManager.loadPlugins(toLoad, null);
+				logger.info(String.valueOf(loaded.size()));
 				loaded = loaded.stream().filter(Objects::nonNull).collect(Collectors.toList());
 				List<Plugin> finalLoaded = loaded;
 				SwingUtilities.invokeAndWait(() ->

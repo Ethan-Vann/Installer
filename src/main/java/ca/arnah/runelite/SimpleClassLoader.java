@@ -37,7 +37,11 @@ public class SimpleClassLoader extends ClassLoader
 		{
 			return defineClass(name, bytes, 0, bytes.length, protDomain);
 		}
-		catch (ClassFormatError | NoClassDefFoundError|VerifyError ex)
+		catch (ClassFormatError | NoClassDefFoundError | VerifyError ex)
+		{
+			return null;
+		}
+		catch (LinkageError ex)
 		{
 			return null;
 		}
