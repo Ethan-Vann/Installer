@@ -14,6 +14,7 @@ import net.runelite.client.ui.SplashScreen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -39,6 +40,7 @@ public class HijackedClientBackup
 	@Inject
 	EventBus eventBus;
 	Logger logger = LoggerFactory.getLogger(HijackedClientBackup.class);
+	SimpleClassLoader simpleLoader = new SimpleClassLoader(getClass().getClassLoader());
 	public void start()
 	{
 		new Thread(() ->
@@ -57,7 +59,6 @@ public class HijackedClientBackup
 
 			try
 			{
-				SimpleClassLoader simpleLoader = new SimpleClassLoader(getClass().getClassLoader());
 				List<Path> jarPaths = findJars();
 				List<Class<?>> toLoad = new ArrayList<>();
 				List<ClassByte> classes = new ArrayList<>();
@@ -87,9 +88,7 @@ public class HijackedClientBackup
 						}
 					}
 				}while(numLoaded != 0);
-				logger.info(String.valueOf(toLoad.size()));
 				List<Plugin> loaded = pluginManager.loadPlugins(toLoad, null);
-				logger.info(String.valueOf(loaded.size()));
 				loaded = loaded.stream().filter(Objects::nonNull).collect(Collectors.toList());
 				List<Plugin> finalLoaded = loaded;
 				SwingUtilities.invokeAndWait(() ->
@@ -157,7 +156,15 @@ public class HijackedClientBackup
 		{
 			jarFile1.stream().forEach(jarEntry ->
 			{
-				if (jarEntry == null || jarEntry.isDirectory() || !jarEntry.getName().contains(".class")) return;
+				if (jarEntry == null || jarEntry.isDirectory()) return;
+				if(!jarEntry.getName().contains(".class")){
+					try (InputStream inputStream = jarFile1.getInputStream(jarEntry)) {
+						simpleLoader.resources.put(jarEntry.getName(),
+								new ByteArrayInputStream(SimpleClassLoader.getBytes(inputStream)));
+					} catch (IOException ioException) {
+						logger.error("Could not obtain resource entry for " + jarEntry.getName());
+					}
+				}
 				try (InputStream inputStream = jarFile1.getInputStream(jarEntry))
 				{
 					classes.add(new ClassByte(ByteStreams.toByteArray(inputStream),
