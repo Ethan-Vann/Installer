@@ -66,10 +66,6 @@ public class HijackedClientBackup
 				{
 					classes.addAll(listFilesInJar(jarPath));
 				}
-				for (Path jarPath : jarPaths)
-				{
-					classes.addAll(listFilesInJar(jarPath));
-				}
 				int numLoaded = 0;
 				do {
 					numLoaded = 0;
