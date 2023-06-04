@@ -102,7 +102,7 @@ public class HijackedClientBackup
 						e.printStackTrace();
 					}
 				});
-				eventBus.post(new ExternalPluginsChanged(new ArrayList<>()));
+				eventBus.post(new ExternalPluginsChanged());
 			}
 			catch (Exception ex)
 			{
